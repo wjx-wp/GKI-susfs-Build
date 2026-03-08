@@ -43,12 +43,12 @@ jobs:
     - name: Build Kernel using Kleaf (Bazel)
       run: |
         cd kernel_workspace
-        # 使用 run 而不是 build，并指定导出目录，让 Bazel 把产物吐出来
-        tools/bazel run //common:kernel_aarch64_dist -- --dist_dir=out/dist
+        # 修正：将 --dist_dir 改为 --destdir，并使用 --wipe_destdir 确保目录干净
+        tools/bazel run //common:kernel_aarch64_dist -- --destdir out/dist --wipe_destdir
 
     - name: Upload Pure Image Artifact
       uses: actions/upload-artifact@v4
       with:
         name: GKI-6.12-susfs-Image
-        # 指向刚才设定的导出目录
+        # 保持此路径不变
         path: kernel_workspace/out/dist/Image
