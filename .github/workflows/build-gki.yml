@@ -43,9 +43,23 @@ jobs:
     - name: Build susfs LKM Module
       run: |
         cd kernel_workspace
-        # 编译目标改为 ksu_susfs 模块
+        
+        # 手动向 BUILD.bazel 注入 ksu_susfs 模块定义
+        # 我们把它加在文件末尾，这样 Bazel 就能识别到这个目标了
+        echo '
+        load("//build/kernel/kleaf:kernel.bzl", "kernel_module")
+
+        kernel_module(
+            name = "ksu_susfs",
+            srcs = ["common/fs/susfs.c", "common/fs/susfs_hooks.c"], # 这里路径需根据注入后的实际位置微调
+            out = "ksu_susfs.ko",
+            kernel_build = "//common:kernel_aarch64",
+        )' >> common/BUILD.bazel
+
+        # 再次尝试编译
         tools/bazel build //common:ksu_susfs
-        # 寻找生成的 .ko 文件位置并拷贝出来
+        
+        # 寻找并拷贝产物
         mkdir -p out/module/
         find bazel-bin/common -name "ksu_susfs.ko" -exec cp {} out/module/ \;
 
