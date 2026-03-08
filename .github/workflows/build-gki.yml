@@ -4,16 +4,18 @@ on:
 
 jobs:
   build-kernel:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # 锁定 Kleaf 兼容性最强、最稳健的 22.04 版本
     steps:
-    - name: Maximize build space
-      uses: easimon/maximize-build-space@master
+    - name: Free up disk space safely
+      uses: jlumbroso/free-disk-space@main
       with:
-        root-reserve-mb: 8192
-        swap-size-mb: 8192
-        remove-dotnet: 'true'
-        remove-android: 'true'
-        remove-haskell: 'true'
+        tool-cache: true
+        android: false # 不清理 Android SDK，保留部分基础构建工具
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: true
+        swap-storage: true # 开启虚拟内存，防止 Kleaf 编译时内存溢出
 
     - name: Configure Git and Environment
       run: |
@@ -35,18 +37,17 @@ jobs:
     - name: Inject SukiSU & susfs
       run: |
         cd kernel_workspace/common
-        # 这里执行你文档里的核心注入命令
+        # 注入 ksun (SukiSU) 和 susfs
         curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
 
     - name: Build Kernel using Kleaf (Bazel)
       run: |
         cd kernel_workspace
-        # 现代 6.12 内核必须用 bazel 编译
+        # 现代 6.12 内核使用 bazel 编译
         tools/bazel build //common:kernel_aarch64_dist
 
     - name: Upload Pure Image Artifact
       uses: actions/upload-artifact@v4
       with:
         name: GKI-6.12-susfs-Image
-        # 提取编译好的纯净通用核心
         path: kernel_workspace/out/common/dist/Image
